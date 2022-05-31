@@ -43,7 +43,6 @@ public final class BdatInputStream extends InputStream {
                 remainingSize--;
                 return v;
             } else if (isLast) {
-                session.sendResponse("250 Message OK, " + size + " bytes received (last chunk)");
                 return -1;
             } else {
                 session.sendResponse("250 Message OK, " + size + " bytes received");

@@ -56,7 +56,7 @@ public class BdatTest {
         }
     }
 
-    @Test
+    @Test(timeout=20000)
     public void testTwoBdatCommands() throws UnknownHostException, SMTPException, IOException {
         MyListener listener = new MyListener();
         SMTPServer server = SMTPServer.port(25000).messageHandler(listener).build();
