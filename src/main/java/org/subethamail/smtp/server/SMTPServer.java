@@ -12,6 +12,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.net.ssl.SSLContext;
@@ -19,8 +21,6 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.AuthenticationHandlerFactory;
 import org.subethamail.smtp.MessageHandlerFactory;
 import org.subethamail.smtp.Version;
@@ -57,7 +57,7 @@ import org.subethamail.smtp.internal.proxy.ProxyHandler;
  * @author Jeff Schnitzer
  */
 public final class SMTPServer implements SSLSocketCreator {
-    private final static Logger log = LoggerFactory.getLogger(SMTPServer.class);
+    private final static Logger log = Logger.getLogger(SMTPServer.class.getName());
 
     /** Hostname used if we can't find one */
     private final static String UNKNOWN_HOSTNAME = "localhost";
@@ -762,7 +762,7 @@ public final class SMTPServer implements SSLSocketCreator {
      * An SMTPServer which has been shut down, must not be reused.
      */
     public synchronized void start() {
-        log.info("SMTP server {} starting", getDisplayableLocalSocketAddress());
+        log.log(Level.INFO, "SMTP server {0} starting", getDisplayableLocalSocketAddress());
 
         if (this.started)
             throw new IllegalStateException("SMTPServer can only be started once. "
@@ -785,14 +785,14 @@ public final class SMTPServer implements SSLSocketCreator {
      * Shut things down gracefully.
      */
     public synchronized void stop() {
-        log.info("SMTP server {} stopping...", getDisplayableLocalSocketAddress());
+        log.log(Level.INFO, "SMTP server {0} stopping...", getDisplayableLocalSocketAddress());
         if (this.serverThread == null)
             return;
 
         this.serverThread.shutdown();
         this.serverThread = null;
 
-        log.info("SMTP server {} stopped", getDisplayableLocalSocketAddress());
+        log.log(Level.INFO, "SMTP server {0} stopped", getDisplayableLocalSocketAddress());
     }
 
     private ServerSocket createServerSocket() throws IOException {

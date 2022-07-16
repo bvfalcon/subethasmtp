@@ -10,12 +10,11 @@ import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.subethamail.smtp.internal.proxy.ProxyHandler;
 import org.subethamail.smtp.server.SMTPServer;
 import org.subethamail.smtp.server.Session;
@@ -27,7 +26,7 @@ import org.subethamail.smtp.server.Session;
  */
 public final class ServerThread extends Thread
 {
-	private static final Logger log = LoggerFactory.getLogger(ServerThread.class);
+	private static final Logger log = Logger.getLogger(ServerThread.class.getName());
 	private final SMTPServer server;
 	private final ServerSocket serverSocket;
         private final ProxyHandler proxyHandler;
@@ -68,28 +67,23 @@ public final class ServerThread extends Thread
 	@Override
 	public void run()
 	{
-		MDC.put("smtpServerLocalSocketAddress", server.getDisplayableLocalSocketAddress());
-		log.info("SMTP server {} started", server.getDisplayableLocalSocketAddress());
+		log.log(Level.INFO, "SMTP server {0} started", server.getDisplayableLocalSocketAddress());
 
 		try
 		{
 			runAcceptLoop();
-			log.info("SMTP server {} stopped accepting connections",
+			log.log(Level.INFO, "SMTP server {0} stopped accepting connections",
 					server.getDisplayableLocalSocketAddress());
 		}
 		catch (RuntimeException e)
 		{
-			log.error("Unexpected exception in server socket thread, server is stopped", e);
+			log.log(Level.SEVERE, "Unexpected exception in server socket thread, server is stopped", e);
 			throw e;
 		}
 		catch (Error e)
 		{
-			log.error("Unexpected error in server socket thread, server is stopped", e);
+			log.log(Level.SEVERE, "Unexpected error in server socket thread, server is stopped", e);
 			throw e;
-		}
-		finally
-		{
-			MDC.remove("smtpServerLocalSocketAddress");
 		}
 	}
 
@@ -121,7 +115,7 @@ public final class ServerThread extends Thread
 				// it also happens during shutdown, when the socket is closed
 				if (!this.shuttingDown)
 				{
-					log.error("Error accepting connection", e);
+					log.log(Level.SEVERE, "Error accepting connection", e);
 					// prevent a possible loop causing 100% processor usage
 					try
 					{
@@ -143,14 +137,14 @@ public final class ServerThread extends Thread
 			catch (IOException e)
 			{
 				connectionPermits.release();
-				log.error("Error while starting a connection", e);
+				log.log(Level.SEVERE, "Error while starting a connection", e);
 				try
 				{
 					socket.close();
 				}
 				catch (IOException e1)
 				{
-					log.debug("Cannot close socket after exception", e1);
+					log.log(Level.FINE, "Cannot close socket after exception", e1);
 				}
 				continue;
 			}
@@ -171,14 +165,14 @@ public final class ServerThread extends Thread
 				{
 					this.sessionThreads.remove(session);
 				}
-				log.error("Error while executing a session", e);
+				log.log(Level.SEVERE, "Error while executing a session", e);
 				try
 				{
 					socket.close();
 				}
 				catch (IOException e1)
 				{
-					log.debug("Cannot close socket after exception", e1);
+					log.log(Level.FINE, "Cannot close socket after exception", e1);
 				}
 				continue;
 			}
@@ -216,11 +210,11 @@ public final class ServerThread extends Thread
 		try
 		{
 			this.serverSocket.close();
-			log.debug("SMTP Server socket shut down");
+			log.log(Level.FINE, "SMTP Server socket shut down");
 		}
 		catch (IOException e)
 		{
-			log.error("Failed to close server socket.", e);
+			log.log(Level.SEVERE, "Failed to close server socket.", e);
 		}
 	}
 
@@ -245,7 +239,7 @@ public final class ServerThread extends Thread
 			server.getExecutorService().awaitTermination(Long.MAX_VALUE,
 					TimeUnit.NANOSECONDS);
 		} catch (InterruptedException e) {
-			log.warn("Interrupted waiting for termination of session threads",
+			log.log(Level.WARNING, "Interrupted waiting for termination of session threads",
 					e);
 			Thread.currentThread().interrupt();
 		}

@@ -10,9 +10,9 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.client.SMTPClient.Response;
 
 import com.github.davidmoten.guavamini.Preconditions;
@@ -27,7 +27,7 @@ import com.github.davidmoten.guavamini.annotations.VisibleForTesting;
 // not final so can mock with Mockito
 public class SmartClient {
 
-    private static final Logger log = LoggerFactory.getLogger(SmartClient.class);
+    private static final Logger log = Logger.getLogger(SmartClient.class.getName());
     
     /** The host name which is sent in the HELO and EHLO commands */
     private final String heloHost;
@@ -200,9 +200,9 @@ public class SmartClient {
         client.send("BDAT " + text.length() + (isLast? " LAST": ""));
         dataWrite(text.getBytes(StandardCharsets.UTF_8));
         client.dataOutput.flush();
-        log.debug("receiving bdat response");
+        log.log(Level.FINE, "receiving bdat response");
         client.receiveAndCheck();
-        log.debug("received bdat response");
+        log.log(Level.FINE, "received bdat response");
     }
     
     public void bdat(String text) throws IOException {
@@ -250,7 +250,7 @@ public class SmartClient {
             if (client.isConnected() && !this.serverClosingTransmissionChannel)
                 client.sendAndCheck("QUIT");
         } catch (IOException ex) {
-            log.warn("Failed to issue QUIT to " + client.getHostPort());
+            log.log(Level.WARNING, "Failed to issue QUIT to " + client.getHostPort());
         }
 
         client.close();

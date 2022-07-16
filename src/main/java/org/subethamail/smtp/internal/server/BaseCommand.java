@@ -4,9 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.logging.Logger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.DropConnectionException;
 import org.subethamail.smtp.server.Session;
 
@@ -19,7 +18,7 @@ import org.subethamail.smtp.server.Session;
 public abstract class BaseCommand implements Command
 {
 	@SuppressWarnings("unused")
-	private final static Logger log = LoggerFactory.getLogger(BaseCommand.class);
+	private final static Logger log = Logger.getLogger(BaseCommand.class.getName());
 
 	/** Name of the command, ie HELO */
 	private final String name;
