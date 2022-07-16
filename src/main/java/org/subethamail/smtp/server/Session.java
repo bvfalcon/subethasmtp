@@ -12,12 +12,11 @@ import java.net.SocketTimeoutException;
 import java.security.cert.Certificate;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.net.ssl.SSLSocket;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.subethamail.smtp.AuthenticationHandler;
 import org.subethamail.smtp.DropConnectionException;
 import org.subethamail.smtp.MessageContext;
@@ -36,7 +35,7 @@ import org.subethamail.smtp.server.SessionHandler.SessionAcceptance;
  * @author Jeff Schnitzer
  */
 public final class Session implements Runnable, MessageContext {
-    private final static Logger log = LoggerFactory.getLogger(Session.class);
+    private final static Logger log = Logger.getLogger(Session.class.getName());
 
     /** A link to our parent server */
     private final SMTPServer server;
@@ -46,13 +45,6 @@ public final class Session implements Runnable, MessageContext {
      * connection is finished.
      */
     private final ServerThread serverThread;
-
-    /**
-     * Saved SLF4J mapped diagnostic context of the parent thread. The parent
-     * thread is the one which calls the constructor. MDC is usually inherited
-     * by new threads, but this mechanism does not work with executors.
-     */
-    private final Map<String, String> parentLoggingMdcContext = MDC.getCopyOfContextMap();
 
     /**
      * Uniquely identifies this session within an extended time period, useful
@@ -136,13 +128,7 @@ public final class Session implements Runnable, MessageContext {
      */
     @Override
     public void run() {
-        // be defensive about setting with null because issue #13
-        // https://jira.qos.ch/browse/SLF4J-414
-        if (parentLoggingMdcContext != null) {
-            MDC.setContextMap(parentLoggingMdcContext);
-        }
         sessionId = server.getSessionIdFactory().create();
-        MDC.put("SessionId", sessionId);
         final String originalName = Thread.currentThread().getName();
         Thread.currentThread().setName(
                 Session.class.getName() + "-" + socket.getInetAddress() + ":" + socket.getPort());
@@ -158,13 +144,13 @@ public final class Session implements Runnable, MessageContext {
                 remoteAddress = proxy.getProxiedAddress();
             }
 
-            if (log.isDebugEnabled()) {
+            if (log.isLoggable(Level.FINE)) {
                 InetAddress remoteInetAddress = this.getRemoteAddress().getAddress();
                 remoteInetAddress.getHostName(); // Causes future toString() to
                                                  // print the name too
 
-                log.debug("SMTP connection from {}, new connection count: {}", remoteInetAddress,
-                        this.serverThread.getNumberOfConnections());
+                log.log(Level.FINE, "SMTP connection from {0}, new connection count: {1}", new Object[] { remoteInetAddress,
+                        this.serverThread.getNumberOfConnections() });
             }
 
             runCommandLoop();
@@ -178,10 +164,10 @@ public final class Session implements Runnable, MessageContext {
                             "421 4.4.0 Problem attempting to execute commands. Please try again later.");
                 } catch (IOException e) {
                 }
-                log.warn("Exception during SMTP transaction", e1);
+                log.log(Level.WARNING, "Exception during SMTP transaction", e1);
             }
         } catch (Throwable e) {
-            log.error("Unexpected error in the SMTP handler thread", e);
+        	log.log(Level.SEVERE, "Unexpected error in the SMTP handler thread", e);
             try {
                 this.sendResponse("421 4.3.0 Mail system failure, closing transmission channel");
             } catch (IOException e1) {
@@ -193,7 +179,6 @@ public final class Session implements Runnable, MessageContext {
             this.endMessageHandler();
             serverThread.sessionEnded(this);
             Thread.currentThread().setName(originalName);
-            MDC.clear();
         }
     }
 
@@ -218,7 +203,7 @@ public final class Session implements Runnable, MessageContext {
      */
     private void runCommandLoop() throws IOException {
         if (this.serverThread.hasTooManyConnections()) {
-            log.debug("SMTP Too many connections!");
+        	log.log(Level.FINE, "SMTP Too many connections!");
 
             this.sendResponse("421 Too many connections, try again later");
             return;
@@ -226,7 +211,7 @@ public final class Session implements Runnable, MessageContext {
 
         final SessionAcceptance sresult = this.server.getSessionHandler().accept(this);
         if (!sresult.accepted()) {
-            log.debug("SMTP " + sresult.errorMessage());
+        	log.log(Level.FINE, "SMTP " + sresult.errorMessage());
             this.sendResponse(sresult.errorCode() + " " + sresult.errorMessage());
             return;
         }
@@ -244,19 +229,19 @@ public final class Session implements Runnable, MessageContext {
                         // Lots of clients just "hang up" rather than issuing QUIT,
                         // which would
                         // fill our logs with the warning in the outer catch.
-                        if (log.isDebugEnabled()) {
-                            log.debug("Error reading client command: " + ex.getMessage(), ex);
+                        if (log.isLoggable(Level.FINE)) {
+                        	log.log(Level.FINE, "Error reading client command: " + ex.getMessage(), ex);
                         }
 
                         return;
                     }
 
                     if (line == null) {
-                        log.debug("no more lines from client");
+                    	log.log(Level.FINE, "no more lines from client");
                         return;
                     }
 
-                    log.debug("Client: {}", line);
+                    log.log(Level.FINE, "Client: {0}", line);
 
                     this.server.getCommandHandler().handleCommand(this, line);
                 } catch (DropConnectionException ex) {
@@ -269,7 +254,7 @@ public final class Session implements Runnable, MessageContext {
                     String msg = "501 Syntax error at character position " + te.position()
                             + ". CR and LF must be CRLF paired.  See RFC 2821 #2.7.1.";
 
-                    log.debug(msg);
+                    log.log(Level.FINE, msg);
                     this.sendResponse(msg);
 
                     // if people are screwing with things, close connection
@@ -277,7 +262,7 @@ public final class Session implements Runnable, MessageContext {
                 } catch (CRLFTerminatedReader.MaxLineLengthException mlle) {
                     String msg = "501 " + mlle.getMessage();
 
-                    log.debug(msg);
+                    log.log(Level.FINE, msg);
                     this.sendResponse(msg);
 
                     // if people are screwing with things, close connection
@@ -352,7 +337,7 @@ public final class Session implements Runnable, MessageContext {
 
     /** Sends the response to the client */
     public void sendResponse(String response) throws IOException {
-        log.debug("Server: {}", response);
+    	log.log(Level.FINE, "Server: {0}", response);
 
         this.writer.print(response + "\r\n");
 
@@ -506,7 +491,7 @@ public final class Session implements Runnable, MessageContext {
             try {
                 this.messageHandler.done();
             } catch (Throwable ex) {
-                log.error("done() threw exception", ex);
+                log.log(Level.SEVERE, "done() threw exception", ex);
             }
         }
     }

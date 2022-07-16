@@ -5,8 +5,9 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.subethamail.smtp.server.Session;
 
 /**
@@ -17,7 +18,7 @@ import org.subethamail.smtp.server.Session;
  */
 public class ProxyProtocolV1V2Handler implements ProxyHandler {
 
-    private final static Logger log = LoggerFactory.getLogger(ProxyProtocolV1V2Handler.class);
+    private final static Logger log = Logger.getLogger(ProxyProtocolV1V2Handler.class.getName());
 
     /** Standard instance */
     public static final ProxyProtocolV1V2Handler INSTANCE =
@@ -48,19 +49,19 @@ public class ProxyProtocolV1V2Handler implements ProxyHandler {
 
 
         if (v1.isValidPrefix(prefix)) {
-            log.debug("(session {}) Detected PROXY protocol v1 prefix", session.getSessionId());
+        	log.log(Level.FINE, "(session {0}) Detected PROXY protocol v1 prefix", session.getSessionId());
             buffered.reset();
             return v1.handle(buffered, out, session);
         }
 
         if (v2.isValidPrefix(prefix)) {
-            log.debug("(session {}) Detected PROXY protocol v2 prefix", session.getSessionId());
+        	log.log(Level.FINE, "(session {0}) Detected PROXY protocol v2 prefix", session.getSessionId());
             buffered.reset();
             return v2.handle(buffered, out, session);
         }
 
         String prefixHex = toHex(prefix, 0, read);
-        log.error("(session {}) Invalid PROXY protocol v1 or v2 prefix {}", session.getSessionId(), prefixHex);
+        log.log(Level.SEVERE, "(session {0}) Invalid PROXY protocol v1 or v2 prefix {1}", new Object[] { session.getSessionId(), prefixHex });
         throw new IOException("Invalid PROXY protocol v1 or v2 prefix " + prefixHex);
 
     }
