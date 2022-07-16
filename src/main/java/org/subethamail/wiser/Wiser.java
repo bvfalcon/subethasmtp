@@ -13,12 +13,12 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.TooMuchDataException;
 import org.subethamail.smtp.helper.SimpleMessageListener;
 import org.subethamail.smtp.server.SMTPServer;
@@ -39,7 +39,7 @@ import org.subethamail.smtp.server.SMTPServer.Builder;
  */
 public final class Wiser implements SimpleMessageListener {
 
-    private final static Logger log = LoggerFactory.getLogger(Wiser.class);
+    private final static Logger log = Logger.getLogger(Wiser.class.getName());
 
     private final SMTPServer server;
 
@@ -64,7 +64,7 @@ public final class Wiser implements SimpleMessageListener {
     }
 
     private static final Accepter ACCEPTER_DEFAULT = (from, recipient) -> {
-        log.debug("Accepting mail from {} to {}", from, recipient);
+        log.log(Level.FINE, "Accepting mail from {0} to {1}", new Object[] { from, recipient });
         return true;
     };
 
@@ -140,7 +140,7 @@ public final class Wiser implements SimpleMessageListener {
     @Override
     public void deliver(String from, String recipient, InputStream data)
             throws TooMuchDataException, IOException {
-        log.debug("Delivering mail from {} to {}", from, recipient);
+        log.log(Level.FINE, "Delivering mail from {0} to {1}", new Object[] { from, recipient });
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         data = new BufferedInputStream(data);
@@ -153,7 +153,7 @@ public final class Wiser implements SimpleMessageListener {
 
         byte[] bytes = out.toByteArray();
 
-        log.debug("Creating message from data with {} bytes", bytes.length);
+        log.log(Level.FINE, "Creating message from data with {0} bytes", bytes.length);
 
         Session session = Session.getDefaultInstance(new Properties());
         // create a new WiserMessage.
