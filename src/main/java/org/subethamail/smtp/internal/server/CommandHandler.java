@@ -8,9 +8,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.DropConnectionException;
 import org.subethamail.smtp.server.Session;
 
@@ -21,7 +21,7 @@ import org.subethamail.smtp.server.Session;
  * @author Scott Hernandez
  */
 public final class CommandHandler {
-    private final static Logger log = LoggerFactory.getLogger(CommandHandler.class);
+    private final static Logger log = Logger.getLogger(CommandHandler.class.getName());
 
     /**
      * The map of known SMTP commands. Keys are upper case names of the
@@ -54,7 +54,7 @@ public final class CommandHandler {
      * Adds or replaces the specified command.
      */
     public void addCommand(Command command) {
-        log.debug("Added command: {}", command.getName());
+    	log.log(Level.FINE, "Added command: {0}", command.getName());
 
         this.commandMap.put(command.getName(), command);
     }

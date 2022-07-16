@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.net.Socket;
 import java.security.cert.Certificate;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.internal.server.BaseCommand;
 import org.subethamail.smtp.server.Session;
 
@@ -20,7 +20,7 @@ import org.subethamail.smtp.server.Session;
  */
 public final class StartTLSCommand extends BaseCommand
 {
-	private final static Logger log = LoggerFactory.getLogger(StartTLSCommand.class);
+	private final static Logger log = Logger.getLogger(StartTLSCommand.class.getName());
 
 	public StartTLSCommand()
 	{
@@ -55,7 +55,7 @@ public final class StartTLSCommand extends BaseCommand
 
 			SSLSocket s = sess.getServer().createSSLSocket(socket);
 			s.startHandshake();
-			log.debug("Cipher suite: " + s.getSession().getCipherSuite());
+			log.log(Level.FINE, "Cipher suite: " + s.getSession().getCipherSuite());
 
 			sess.setSocket(s);
 			sess.resetSmtpProtocol(); // clean state
@@ -80,11 +80,11 @@ public final class StartTLSCommand extends BaseCommand
 			// This will at least limit it to a single WARN line and not a whole stacktrace.
 			// Unfortunately it might catch some other types of SSLHandshakeException (if
 			// in fact other types exist), but oh well.
-			log.warn("startTLS() failed: " + ex);
+			log.log(Level.WARNING, "startTLS() failed: " + ex);
 		}
 		catch (IOException ex)
 		{
-			log.warn("startTLS() failed: " + ex.getMessage(), ex);
+			log.log(Level.WARNING, "startTLS() failed: " + ex.getMessage(), ex);
 		}
 	}
 }
