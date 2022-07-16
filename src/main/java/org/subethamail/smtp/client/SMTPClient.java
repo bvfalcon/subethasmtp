@@ -11,9 +11,9 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.internal.Constants;
 import org.subethamail.smtp.internal.io.DotTerminatedOutputStream;
 import org.subethamail.smtp.internal.io.ExtraDotOutputStream;
@@ -39,7 +39,7 @@ public class SMTPClient implements AutoCloseable {
      */
     public static final long RECEIVE_AND_CHECK_PAUSE_MS = 50;
 
-    private static Logger log = LoggerFactory.getLogger(SMTPClient.class);
+    private static Logger log = Logger.getLogger(SMTPClient.class.getName());
 
     /** the local socket address */
     private final Optional<SocketAddress> bindpoint;
@@ -156,7 +156,7 @@ public class SMTPClient implements AutoCloseable {
         if (connected)
             throw new IllegalStateException("Already connected");
 
-        log.debug("Connecting to {}", this.hostPortName);
+        log.log(Level.FINE, "Connecting to {}", this.hostPortName);
 
         this.socket = createSocket();
         this.socket.bind(this.bindpoint.orElse(null));
@@ -208,7 +208,7 @@ public class SMTPClient implements AutoCloseable {
      *            should not have any newlines
      */
     protected void send(String msg) throws IOException {
-        log.debug("Client: {}", msg);
+        log.log(Level.FINE, "Client: {}", msg);
         if (!connected)
             throw new IllegalStateException("Not connected");
 
@@ -237,7 +237,7 @@ public class SMTPClient implements AutoCloseable {
                     throw new IOException("Malformed SMTP reply: " + builder);
             }
 
-            log.debug("Server: {}", line);
+            log.log(Level.FINE, "Server: {0}", line);
 
             if (line.length() < 4)
                 throw new IOException("Malformed SMTP reply: " + line);
@@ -304,9 +304,9 @@ public class SMTPClient implements AutoCloseable {
             try {
                 this.socket.close();
 
-                log.debug("Closed connection to {}", this.hostPortName);
+                log.log(Level.FINE, "Closed connection to {0}", this.hostPortName);
             } catch (IOException ex) {
-                log.error("Problem closing connection to " + this.hostPortName, ex);
+                log.log(Level.SEVERE, "Problem closing connection to " + this.hostPortName, ex);
             }
         }
     }
